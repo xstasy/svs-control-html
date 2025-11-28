@@ -319,8 +319,9 @@ async function connectToDevice() {
     try {
         logConsole('Requesting Bluetooth device...');
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: [UUID]
+            filters: [{
+                services: [UUID],
+            }]
         });
 
         logConsole(`Connecting to ${bluetoothDevice.name}...`);
