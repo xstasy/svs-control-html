@@ -340,8 +340,10 @@ async function connectToDevice() {
 
         document.getElementsByClassName('header')[0].className = 'header hidden'
         
-        // Request initial configuration
-        await requestConfig();
+        setTimeout(() => {
+            requestConfig();
+        }, 500)
+        
         document.getElementById('app').className = '';
 
     } catch (error) {
