@@ -1,5 +1,4 @@
 // SVS Configuration
-const SVS_MAC_ADDRESS = "08:EB:ED:69:31:38";
 const CHAR22 = "6409d79d-cd28-479c-a639-92f9e1948b43";
 const UUID = "1fee6acf-a826-4e37-9635-4d8a01642c5d";
 const FRAME_PREAMBLE = 0xAA;
@@ -343,7 +342,7 @@ async function connectToDevice() {
         
         setTimeout(() => {
             requestConfig();
-        }, 500)
+        }, 1)
         
         document.getElementById('app').className = '';
 
