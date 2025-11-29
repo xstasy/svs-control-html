@@ -1,6 +1,6 @@
 // SVS Configuration
-const CHAR22 = "6409d79d-cd28-479c-a639-92f9e1948b43";
 const UUID = "1fee6acf-a826-4e37-9635-4d8a01642c5d";
+const CHAR22 = "6409d79d-cd28-479c-a639-92f9e1948b43";
 const FRAME_PREAMBLE = 0xAA;
 
 const SVS_FRAME_TYPES = {
@@ -342,7 +342,7 @@ async function connectToDevice() {
         
         setTimeout(() => {
             requestConfig();
-        }, 1)
+        }, 500)
         
         document.getElementById('app').className = '';
 

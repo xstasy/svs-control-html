@@ -11,18 +11,18 @@ body {
 }
 
 .container {
-    padding: 5px;
+    padding: 5px 5px 0px 5px;
     margin: 0 auto;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+
 }
 
 .header {
-    padding: 20px;
-    background: #2c3e50;
-    color: white;
-    text-align: center;
+    display: flex;
+    align-items: center;    
+    justify-content: center;
+    height: 98vh;           
 }
 
 .hidden {
@@ -34,7 +34,7 @@ body {
 }
 
 .connect-btn {
-    background: #27ae60;
+    background: #006cb4;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -45,7 +45,7 @@ body {
 }
 
 .connect-btn:hover {
-    background: #229954;
+    background: #005c99;
 }
 
 .connect-btn:disabled {
@@ -71,9 +71,8 @@ body {
 }
 
 .tabs {
-    margin-top: 20px;
     display: flex;
-    background: #444;
+    gap: 5px;
 }
 
 .tab {
@@ -94,7 +93,7 @@ body {
 
 .tab.active {
     background: #111;
-    border-bottom: 2px solid #3498db;
+    border-bottom: 2px solid #006cb4;
 }
 
 .tab-content {
@@ -152,7 +151,7 @@ input[type="range"]::-webkit-slider-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #3498db;
+    background: #006cb4;
     cursor: pointer;
 }
 
@@ -160,7 +159,7 @@ input[type="range"]::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #3498db;
+    background: #006cb4;
     cursor: pointer;
     border: none;
 }
@@ -203,19 +202,22 @@ select:disabled {
     font-weight: normal;
 }
 
+.mr-5 {
+    margin-right: 5px;
+}
+
 button {
-    background: #3498db;
+    background: #006cb4;
     color: white;
     border: none;
     padding: 10px 15px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    margin-right: 5px;
 }
 
 button:hover {
-    background: #2980b9;
+    background: #005c99;
 }
 
 button:disabled {
@@ -246,12 +248,13 @@ button:disabled {
 }
 
 .console {
+    flex: 1;
     background: #1e1e1e;
-    color: #00ff00;
+    color: #006cb4;
     padding: 10px;
     border-radius: 8px;
-    max-height: auto;
     overflow-y: auto;
+    overflow-x: hidden;
     font-family: 'Courier New', monospace;
     font-size: 12px;
     margin-top: 15px;

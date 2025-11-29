@@ -1,16 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVSControl</title>
+    <link rel="icon" type="image/png"
+        href="//www.svsound.com/cdn/shop/files/svsfavicon.jpg?crop=center&height=32&v=1676574291&width=32">
     <link rel="stylesheet" href="./svs.css" />
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111">
+
+    <!-- Needed for iOS -->
+    <link rel="apple-touch-icon" href="svs-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
+
 <body>
     <div class="container">
         <div class="header">
-            <button class="connect-btn" id="connectBtn">Connect to Subwoofer</button>
+            <button class="connect-btn" id="connectBtn">Pair</button>
         </div>
+        
 
         <div id="app" class="hidden">
             <div class="tabs">
@@ -43,7 +54,7 @@
                         <input type="checkbox" id="lpfCheckbox">
                         <label for="lpfCheckbox" id="lpfLabel">Low Pass Filter OFF (LFE Active)</label>
                     </div>
-                    
+
                     <div class="slider-container">
                         <div class="slider-label">
                             <span>Low Pass Filter Freq. (Hz)</span>
@@ -68,7 +79,7 @@
                         <input type="checkbox" id="roomGainCheckbox" checked>
                         <label for="roomGainCheckbox" id="roomGainLabel">Room Gain Compensation ON</label>
                     </div>
-                    
+
                     <div class="slider-container">
                         <div class="slider-label">
                             <span>Room Gain Freq. (Hz)</span>
@@ -93,7 +104,7 @@
                         <input type="checkbox" id="peq1Checkbox">
                         <label for="peq1Checkbox" id="peq1Label">PEQ1 Disabled</label>
                     </div>
-                    
+
                     <div class="slider-container">
                         <div class="slider-label">
                             <span>Freq (Hz)</span>
@@ -124,7 +135,7 @@
                         <input type="checkbox" id="peq2Checkbox">
                         <label for="peq2Checkbox" id="peq2Label">PEQ2 Disabled</label>
                     </div>
-                    
+
                     <div class="slider-container">
                         <div class="slider-label">
                             <span>Freq (Hz)</span>
@@ -155,7 +166,7 @@
                         <input type="checkbox" id="peq3Checkbox">
                         <label for="peq3Checkbox" id="peq3Label">PEQ3 Disabled</label>
                     </div>
-                    
+
                     <div class="slider-container">
                         <div class="slider-label">
                             <span>Freq (Hz)</span>
@@ -192,9 +203,9 @@
                             <option value="2">CUSTOM</option>
                             <option value="3" selected>DEFAULT</option>
                         </select>
-                        <button onclick="loadPreset()">Load</button>
-                        <button onclick="savePreset()">Save</button>
-                        <button onclick="renamePreset()">Rename</button>
+                        <button class="mr-5" onclick="loadPreset()">Load</button>
+                        <button class="mr-5" onclick="savePreset()">Save</button>
+                        <button class="mr-5" onclick="renamePreset()">Rename</button>
                     </div>
                 </div>
 
@@ -221,11 +232,12 @@
                         <option value="30">30 Hz</option>
                     </select>
                 </div>
-                <div class="console" id="console"></div>
+                <div class="console fill-space" id="console"></div>
             </div>
         </div>
     </div>
 
     <script src="./svs.js"></script>
 </body>
+
 </html>
