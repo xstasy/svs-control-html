@@ -65,53 +65,82 @@ const SVS_PARAMS = {
 // Global variables
 let bluetoothDevice = null;
 let characteristic = null;
-let txBuffer = [];
 let partialFrame = new Uint8Array();
 let presetValues = ["MOVIE", "MUSIC", "CUSTOM", "DEFAULT"];
 
+// Cached DOM elements
+const ui = {
+    root: {
+        app: document.getElementById('app'),
+        header: document.getElementsByClassName('header')[0],
+        console: document.getElementById('console'),
+        connectBtn: document.getElementById('connectBtn')
+    },
+    volume: { slider: document.getElementById('volumeSlider'), value: document.getElementById('volumeValue') },
+    phase: { slider: document.getElementById('phaseSlider'), value: document.getElementById('phaseValue') },
+    lpf: {
+        checkbox: document.getElementById('lpfCheckbox'),
+        freqSlider: document.getElementById('lpfFreqSlider'),
+        freqValue: document.getElementById('lpfFreqValue'),
+        slope: document.getElementById('lpfSlope'),
+        label: document.getElementById('lpfLabel')
+    },
+    roomGain: {
+        checkbox: document.getElementById('roomGainCheckbox'),
+        freqSlider: document.getElementById('roomGainFreqSlider'),
+        freqValue: document.getElementById('roomGainFreqValue'),
+        slope: document.getElementById('roomGainSlope'),
+        label: document.getElementById('roomGainLabel')
+    },
+    peq1: {
+        checkbox: document.getElementById('peq1Checkbox'),
+        freqSlider: document.getElementById('peq1FreqSlider'),
+        freqValue: document.getElementById('peq1FreqValue'),
+        boostSlider: document.getElementById('peq1BoostSlider'),
+        boostValue: document.getElementById('peq1BoostValue'),
+        qSlider: document.getElementById('peq1QSlider'),
+        qValue: document.getElementById('peq1QValue'),
+        label: document.getElementById('peq1Label')
+    },
+    peq2: {
+        checkbox: document.getElementById('peq2Checkbox'),
+        freqSlider: document.getElementById('peq2FreqSlider'),
+        freqValue: document.getElementById('peq2FreqValue'),
+        boostSlider: document.getElementById('peq2BoostSlider'),
+        boostValue: document.getElementById('peq2BoostValue'),
+        qSlider: document.getElementById('peq2QSlider'),
+        qValue: document.getElementById('peq2QValue'),
+        label: document.getElementById('peq2Label')
+    },
+    peq3: {
+        checkbox: document.getElementById('peq3Checkbox'),
+        freqSlider: document.getElementById('peq3FreqSlider'),
+        freqValue: document.getElementById('peq3FreqValue'),
+        boostSlider: document.getElementById('peq3BoostSlider'),
+        boostValue: document.getElementById('peq3BoostValue'),
+        qSlider: document.getElementById('peq3QSlider'),
+        qValue: document.getElementById('peq3QValue'),
+        label: document.getElementById('peq3Label')
+    },
+    standby: { select: document.getElementById('standbySelect') },
+    polarity: { checkbox: document.getElementById('polarityCheckbox'), label: document.getElementById('polarityLabel') },
+    portTuning: { select: document.getElementById('portTuningSelect') },
+    preset: { select: document.getElementById('presetSelect') },
+    tabs: document.querySelectorAll('.tab'),
+    tabContents: document.querySelectorAll('.tab-content')
+};
+
+
 // CRC calculation (CRC-CCITT)
-function crcHqx(data, crc = 0) {
-    for (let i = 0; i < data.length; i++) {
-        crc = ((crc << 8) & 0xFF00) ^ crcTable[((crc >> 8) ^ data[i]) & 0xFF];
+function crcHqx(data, crc = 0x0000) {
+    for (let byte of data) {
+        crc ^= byte << 8;
+        for (let i = 0; i < 8; i++) {
+            crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+        }
     }
     return crc & 0xFFFF;
 }
-
-// CRC-CCITT lookup table
-const crcTable = new Uint16Array([
-    0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
-    0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
-    0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
-    0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de,
-    0x2462, 0x3443, 0x0420, 0x1401, 0x64e6, 0x74c7, 0x44a4, 0x5485,
-    0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d,
-    0x3653, 0x2672, 0x1611, 0x0630, 0x76d7, 0x66f6, 0x5695, 0x46b4,
-    0xb75b, 0xa77a, 0x9719, 0x8738, 0xf7df, 0xe7fe, 0xd79d, 0xc7bc,
-    0x48c4, 0x58e5, 0x6886, 0x78a7, 0x0840, 0x1861, 0x2802, 0x3823,
-    0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b,
-    0x5af5, 0x4ad4, 0x7ab7, 0x6a96, 0x1a71, 0x0a50, 0x3a33, 0x2a12,
-    0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a,
-    0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0x0c60, 0x1c41,
-    0xedae, 0xfd8f, 0xcdec, 0xddcd, 0xad2a, 0xbd0b, 0x8d68, 0x9d49,
-    0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0x0e70,
-    0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78,
-    0x9188, 0x81a9, 0xb1ca, 0xa1eb, 0xd10c, 0xc12d, 0xf14e, 0xe16f,
-    0x1080, 0x00a1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067,
-    0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e,
-    0x02b1, 0x1290, 0x22f3, 0x32d2, 0x4235, 0x5214, 0x6277, 0x7256,
-    0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d,
-    0x34e2, 0x24c3, 0x14a0, 0x0481, 0x7466, 0x6447, 0x5424, 0x4405,
-    0xa7db, 0xb7fa, 0x8799, 0x97b8, 0xe75f, 0xf77e, 0xc71d, 0xd73c,
-    0x26d3, 0x36f2, 0x0691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634,
-    0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab,
-    0x5844, 0x4865, 0x7806, 0x6827, 0x18c0, 0x08e1, 0x3882, 0x28a3,
-    0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a,
-    0x4a75, 0x5a54, 0x6a37, 0x7a16, 0x0af1, 0x1ad0, 0x2ab3, 0x3a92,
-    0xfd2e, 0xed0f, 0xdd6c, 0xcd4d, 0xbdaa, 0xad8b, 0x9de8, 0x8dc9,
-    0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1,
-    0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
-    0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
-]);
 
 // Utility functions
 function toHexString(byteArray) {
@@ -303,49 +332,36 @@ function svsDecode(frame) {
     return output;
 }
 
-// Console logging
+// Logging
 function logConsole(message) {
-    const consoleDiv = document.getElementById('console');
     const line = document.createElement('div');
     line.className = 'console-line';
     line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-    consoleDiv.appendChild(line);
-    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    ui.root.console.appendChild(line);
+    ui.root.console.scrollTop = ui.root.console.scrollHeight;
 }
 
-// Bluetooth functions
+// Bluetooth functions using cached DOM
 async function connectToDevice() {
     try {
         logConsole('Requesting Bluetooth device...');
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-            filters: [{
-                services: [UUID],
-            }]
-        });
-
+        bluetoothDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: [UUID] }] });
         logConsole(`Connecting to ${bluetoothDevice.name}...`);
         const server = await bluetoothDevice.gatt.connect();
-
         logConsole('Getting service...');
         const service = await server.getPrimaryService(UUID);
-
         logConsole('Getting characteristic...');
         characteristic = await service.getCharacteristic(CHAR22);
-
         logConsole('Starting notifications...');
         await characteristic.startNotifications();
         characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-        document.getElementById('connectBtn').textContent = 'Disconnect';
-        document.getElementById('connectBtn').onclick = disconnectFromDevice;
 
-        document.getElementsByClassName('header')[0].className = 'header hidden'
-        
-        setTimeout(() => {
-            requestConfig();
-        }, 500)
-        
-        document.getElementById('app').className = '';
+        ui.root.connectBtn.textContent = 'Disconnect';
+        ui.root.connectBtn.onclick = disconnectFromDevice;
+        ui.root.header.className = 'header hidden';
+        ui.root.app.className = '';
 
+        setTimeout(() => requestConfig(), 500);
     } catch (error) {
         logConsole(`ERROR: ${error.message}`);
         alert('Failed to connect to device. Make sure Bluetooth is enabled and the device is nearby.');
@@ -356,28 +372,20 @@ function disconnectFromDevice() {
     if (bluetoothDevice && bluetoothDevice.gatt.connected) {
         bluetoothDevice.gatt.disconnect();
         logConsole('Disconnected');
-        document.getElementById('connectBtn').textContent = 'Connect to Subwoofer';
-        document.getElementById('connectBtn').onclick = connectToDevice;
-        document.getElementById('connectBtn').className = 'btn'
-        document.getElementById('app').className = 'hidden';
-        document.getElementsByClassName('header')[0].className = 'header'
+        ui.root.connectBtn.textContent = 'Connect to Subwoofer';
+        ui.root.connectBtn.onclick = connectToDevice;
+        ui.root.connectBtn.className = 'btn';
+        ui.root.app.className = 'hidden';
+        ui.root.header.className = 'header';
     }
 }
 
+// Notification handler
 function handleNotifications(event) {
     const value = new Uint8Array(event.target.value.buffer);
-
-    if (value[0] === FRAME_PREAMBLE) {
-        partialFrame = value;
-    } else {
-        partialFrame = concatArrays(partialFrame, value);
-    }
-
-    // Check if we have enough data to read the length field
+    partialFrame = (value[0] === FRAME_PREAMBLE) ? value : concatArrays(partialFrame, value);
     if (partialFrame.length >= 5) {
         const expectedLength = bytesToInt(partialFrame.slice(3, 5));
-
-        // Only try to decode when we have the complete frame
         if (partialFrame.length >= expectedLength) {
             const decoded = svsDecode(partialFrame);
             if (decoded.FRAME_RECOGNIZED) {
@@ -390,12 +398,9 @@ function handleNotifications(event) {
     }
 }
 
+// Sending frames
 async function sendFrame(frame) {
-    if (!characteristic) {
-        logConsole('ERROR: Not connected to device');
-        return;
-    }
-
+    if (!characteristic) return logConsole('ERROR: Not connected to device');
     try {
         await characteristic.writeValue(frame);
         logConsole(`-> Sent [${toHexString(frame)}]`);
@@ -403,7 +408,6 @@ async function sendFrame(frame) {
         logConsole(`ERROR: Failed to send: ${error.message}`);
     }
 }
-
 async function sendCommand(ftype, param, data = null) {
     const frame = svsEncode(ftype, param, data);
     if (frame) {
@@ -411,7 +415,6 @@ async function sendCommand(ftype, param, data = null) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
 }
-
 async function requestConfig() {
     await sendCommand("MEMREAD", "FULL_SETTINGS");
     await sendCommand("MEMREAD", "PRESET1NAME");
@@ -419,97 +422,97 @@ async function requestConfig() {
     await sendCommand("MEMREAD", "PRESET3NAME");
 }
 
-// Widget refresh function
+// Refresh widgets using cached UI elements
 function refreshWidgets(values) {
     for (const [key, value] of Object.entries(values)) {
         switch (key) {
             case "VOLUME":
-                document.getElementById('volumeSlider').value = value;
-                document.getElementById('volumeValue').textContent = value;
+                ui.volume.slider.value = value;
+                ui.volume.value.textContent = value;
                 break;
             case "PHASE":
-                document.getElementById('phaseSlider').value = value;
-                document.getElementById('phaseValue').textContent = value;
+                ui.phase.slider.value = value;
+                ui.phase.value.textContent = value;
                 break;
             case "LOW_PASS_FILTER_ENABLE":
-                document.getElementById('lpfCheckbox').checked = value === 1;
+                ui.lpf.checkbox.checked = value === 1;
                 updateLpfState();
                 break;
             case "LOW_PASS_FILTER_FREQ":
-                document.getElementById('lpfFreqSlider').value = value;
-                document.getElementById('lpfFreqValue').textContent = value;
+                ui.lpf.freqSlider.value = value;
+                ui.lpf.freqValue.textContent = value;
                 break;
             case "LOW_PASS_FILTER_SLOPE":
-                document.getElementById('lpfSlope').value = value;
+                ui.lpf.slope.value = value;
                 break;
             case "ROOM_GAIN_ENABLE":
-                document.getElementById('roomGainCheckbox').checked = value === 1;
+                ui.roomGain.checkbox.checked = value === 1;
                 updateRoomGainState();
                 break;
             case "ROOM_GAIN_FREQ":
-                document.getElementById('roomGainFreqSlider').value = value;
-                document.getElementById('roomGainFreqValue').textContent = value;
+                ui.roomGain.freqSlider.value = value;
+                ui.roomGain.freqValue.textContent = value;
                 break;
             case "ROOM_GAIN_SLOPE":
-                document.getElementById('roomGainSlope').value = value;
+                ui.roomGain.slope.value = value;
                 break;
             case "PEQ1_ENABLE":
-                document.getElementById('peq1Checkbox').checked = value === 1;
+                ui.peq1.checkbox.checked = value === 1;
                 updatePeq1State();
                 break;
             case "PEQ1_FREQ":
-                document.getElementById('peq1FreqSlider').value = value;
-                document.getElementById('peq1FreqValue').textContent = value;
+                ui.peq1.freqSlider.value = value;
+                ui.peq1.freqValue.textContent = value;
                 break;
             case "PEQ1_BOOST":
-                document.getElementById('peq1BoostSlider').value = value;
-                document.getElementById('peq1BoostValue').textContent = value.toFixed(1);
+                ui.peq1.boostSlider.value = value;
+                ui.peq1.boostValue.textContent = value.toFixed(1);
                 break;
             case "PEQ1_QFACTOR":
-                document.getElementById('peq1QSlider').value = value;
-                document.getElementById('peq1QValue').textContent = value.toFixed(1);
+                ui.peq1.qSlider.value = value;
+                ui.peq1.qValue.textContent = value.toFixed(1);
                 break;
             case "PEQ2_ENABLE":
-                document.getElementById('peq2Checkbox').checked = value === 1;
+                ui.peq2.checkbox.checked = value === 1;
                 updatePeq2State();
                 break;
             case "PEQ2_FREQ":
-                document.getElementById('peq2FreqSlider').value = value;
-                document.getElementById('peq2FreqValue').textContent = value;
+                ui.peq2.freqSlider.value = value;
+                ui.peq2.freqValue.textContent = value;
                 break;
             case "PEQ2_BOOST":
-                document.getElementById('peq2BoostSlider').value = value;
-                document.getElementById('peq2BoostValue').textContent = value.toFixed(1);
+                ui.peq2.boostSlider.value = value;
+                ui.peq2.boostValue.textContent = value.toFixed(1);
                 break;
             case "PEQ2_QFACTOR":
-                document.getElementById('peq2QSlider').value = value;
-                document.getElementById('peq2QValue').textContent = value.toFixed(1);
+                ui.peq2.qSlider.value = value;
+                ui.peq2.qValue.textContent = value.toFixed(1);
                 break;
             case "PEQ3_ENABLE":
-                document.getElementById('peq3Checkbox').checked = value === 1;
+                ui.peq3.checkbox.checked = value === 1;
                 updatePeq3State();
                 break;
             case "PEQ3_FREQ":
-                document.getElementById('peq3FreqSlider').value = value;
-                document.getElementById('peq3FreqValue').textContent = value;
+                ui.peq3.freqSlider.value = value;
+                ui.peq3.freqValue.textContent = value;
                 break;
             case "PEQ3_BOOST":
-                document.getElementById('peq3BoostSlider').value = value;
-                document.getElementById('peq3BoostValue').textContent = value.toFixed(1);
+                ui.peq3.boostSlider.value = value;
+                ui.peq3.boostValue.textContent = value.toFixed(1);
                 break;
             case "PEQ3_QFACTOR":
-                document.getElementById('peq3QSlider').value = value;
-                document.getElementById('peq3QValue').textContent = value.toFixed(1);
+                ui.peq3.qSlider.value = value;
+                ui.peq3.qValue.textContent = value.toFixed(1);
                 break;
             case "STANDBY":
-                document.getElementById('standbySelect').value = value;
+                ui.standby.select.value = value;
                 break;
             case "POLARITY":
-                document.getElementById('polarityCheckbox').checked = value === 1;
+                ui.polarity.checkbox.checked = value === 1;
                 updatePolarityLabel();
                 break;
             case "PORTTUNING":
-                document.getElementById('portTuningSelect').value = value;
+                ui.portTuning.select.value = value;
                 break;
             case "PRESET1NAME":
             case "PRESET2NAME":
@@ -522,285 +525,108 @@ function refreshWidgets(values) {
     }
 }
 
-// UI Update functions
+// UI update functions using cached elements
 function updateLpfState() {
-    const enabled = document.getElementById('lpfCheckbox').checked;
-    document.getElementById('lpfFreqSlider').disabled = !enabled;
-    document.getElementById('lpfSlope').disabled = !enabled;
-    document.getElementById('lpfLabel').textContent = enabled ?
-        'Low Pass Filter ON (LFE Inactive)' : 'Low Pass Filter OFF (LFE Active)';
+    const enabled = ui.lpf.checkbox.checked;
+    ui.lpf.freqSlider.disabled = !enabled;
+    ui.lpf.slope.disabled = !enabled;
+    ui.lpf.label.textContent = enabled ? 'Low Pass Filter ON (LFE Inactive)' : 'Low Pass Filter OFF (LFE Active)';
 }
 
 function updateRoomGainState() {
-    const enabled = document.getElementById('roomGainCheckbox').checked;
-    document.getElementById('roomGainFreqSlider').disabled = !enabled;
-    document.getElementById('roomGainSlope').disabled = !enabled;
-    document.getElementById('roomGainLabel').textContent = enabled ?
-        'Room Gain Compensation ON' : 'Room Gain Compensation OFF';
+    const enabled = ui.roomGain.checkbox.checked;
+    ui.roomGain.freqSlider.disabled = !enabled;
+    ui.roomGain.slope.disabled = !enabled;
+    ui.roomGain.label.textContent = enabled ? 'Room Gain Compensation ON' : 'Room Gain Compensation OFF';
 }
 
 function updatePeq1State() {
-    const enabled = document.getElementById('peq1Checkbox').checked;
-    document.getElementById('peq1FreqSlider').disabled = !enabled;
-    document.getElementById('peq1BoostSlider').disabled = !enabled;
-    document.getElementById('peq1QSlider').disabled = !enabled;
-    document.getElementById('peq1Label').textContent = enabled ? 'PEQ1 Enabled' : 'PEQ1 Disabled';
+    const enabled = ui.peq1.checkbox.checked;
+    ui.peq1.freqSlider.disabled = !enabled;
+    ui.peq1.boostSlider.disabled = !enabled;
+    ui.peq1.qSlider.disabled = !enabled;
+    ui.peq1.label.textContent = enabled ? 'PEQ1 Enabled' : 'PEQ1 Disabled';
 }
 
 function updatePeq2State() {
-    const enabled = document.getElementById('peq2Checkbox').checked;
-    document.getElementById('peq2FreqSlider').disabled = !enabled;
-    document.getElementById('peq2BoostSlider').disabled = !enabled;
-    document.getElementById('peq2QSlider').disabled = !enabled;
-    document.getElementById('peq2Label').textContent = enabled ? 'PEQ2 Enabled' : 'PEQ2 Disabled';
+    const enabled = ui.peq2.checkbox.checked;
+    ui.peq2.freqSlider.disabled = !enabled;
+    ui.peq2.boostSlider.disabled = !enabled;
+    ui.peq2.qSlider.disabled = !enabled;
+    ui.peq2.label.textContent = enabled ? 'PEQ2 Enabled' : 'PEQ2 Disabled';
 }
 
 function updatePeq3State() {
-    const enabled = document.getElementById('peq3Checkbox').checked;
-    document.getElementById('peq3FreqSlider').disabled = !enabled;
-    document.getElementById('peq3BoostSlider').disabled = !enabled;
-    document.getElementById('peq3QSlider').disabled = !enabled;
-    document.getElementById('peq3Label').textContent = enabled ? 'PEQ3 Enabled' : 'PEQ3 Disabled';
+    const enabled = ui.peq3.checkbox.checked;
+    ui.peq3.freqSlider.disabled = !enabled;
+    ui.peq3.boostSlider.disabled = !enabled;
+    ui.peq3.qSlider.disabled = !enabled;
+    ui.peq3.label.textContent = enabled ? 'PEQ3 Enabled' : 'PEQ3 Disabled';
 }
 
 function updatePolarityLabel() {
-    const checked = document.getElementById('polarityCheckbox').checked;
-    document.getElementById('polarityLabel').textContent = checked ? 'Polarity (-)' : 'Polarity (+)';
+    ui.polarity.label.textContent = ui.polarity.checkbox.checked ? 'Polarity (-)' : 'Polarity (+)';
 }
 
 function updatePresetDropdown() {
-    const select = document.getElementById('presetSelect');
     for (let i = 0; i < 3; i++) {
-        select.options[i].text = presetValues[i];
+        ui.preset.select.options[i].text = presetValues[i];
     }
 }
 
 // Tab switching
 function switchTab(index) {
-    const tabs = document.querySelectorAll('.tab');
-    const contents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach((tab, i) => {
-        if (i === index) {
-            tab.classList.add('active');
-            contents[i].classList.add('active');
-        } else {
-            tab.classList.remove('active');
-            contents[i].classList.remove('active');
-        }
-    });
+    ui.tabs.forEach((tab, i) => { tab.classList.toggle('active', i === index); ui.tabContents[i].classList.toggle('active', i === index); });
 }
 
-// Preset functions
-function loadPreset() {
-    const presetIndex = parseInt(document.getElementById('presetSelect').value);
-    sendCommand("PRESETLOADSAVE", `PRESET${presetIndex + 1}LOAD`);
-}
-
-function savePreset() {
-    const presetIndex = parseInt(document.getElementById('presetSelect').value);
-    if (presetIndex !== 3) {
-        sendCommand("PRESETLOADSAVE", `PRESET${presetIndex + 1}SAVE`);
-    } else {
-        alert('Cannot save to DEFAULT preset');
-    }
-}
-
+// Presets
+function loadPreset() { sendCommand("PRESETLOADSAVE", `PRESET${parseInt(ui.preset.select.value) + 1}LOAD`); }
+function savePreset() { if (parseInt(ui.preset.select.value) !== 3) sendCommand("PRESETLOADSAVE", `PRESET${parseInt(ui.preset.select.value) + 1}SAVE`); else alert('Cannot save to DEFAULT preset'); }
 function renamePreset() {
-    const presetIndex = parseInt(document.getElementById('presetSelect').value);
-    if (presetIndex === 3) {
-        alert('Cannot rename DEFAULT preset');
-        return;
-    }
-
-    const newName = prompt('Enter new preset name (max 8 characters):', presetValues[presetIndex]);
-    if (newName) {
-        const filtered = newName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
-        if (filtered && !presetValues.includes(filtered)) {
-            presetValues[presetIndex] = filtered;
-            updatePresetDropdown();
-            sendCommand("MEMWRITE", `PRESET${presetIndex + 1}NAME`, filtered);
-        }
-    }
+    const idx = parseInt(ui.preset.select.value); if (idx === 3) { alert('Cannot rename DEFAULT preset'); return; }
+    const newName = prompt('Enter new preset name (max 8 characters):', presetValues[idx]);
+    if (newName) { const filtered = newName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8); if (filtered && !presetValues.includes(filtered)) { presetValues[idx] = filtered; updatePresetDropdown(); sendCommand("MEMWRITE", `PRESET${idx + 1}NAME`, filtered); } }
 }
 
-// Event listeners setup
+// Event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Connect button
-    document.getElementById('connectBtn').onclick = connectToDevice;
+    ui.root.connectBtn.onclick = connectToDevice;
 
-    // Volume slider
-    document.getElementById('volumeSlider').addEventListener('change', (e) => {
-        document.getElementById('volumeValue').textContent = e.target.value;
-        sendCommand("MEMWRITE", "VOLUME", parseInt(e.target.value));
-    });
-    document.getElementById('volumeSlider').addEventListener('input', (e) => {
-        document.getElementById('volumeValue').textContent = e.target.value;
+    // Volume & Phase
+    [['volume', 'VOLUME'], ['phase', 'PHASE']].forEach(([key, param]) => {
+        const group = ui[key];
+        group.slider.addEventListener('input', e => group.value.textContent = e.target.value);
+        group.slider.addEventListener('change', e => sendCommand("MEMWRITE", param, parseFloat(e.target.value)));
     });
 
-    // Phase slider
-    document.getElementById('phaseSlider').addEventListener('change', (e) => {
-        document.getElementById('phaseValue').textContent = e.target.value;
-        sendCommand("MEMWRITE", "PHASE", parseInt(e.target.value));
-    });
-    document.getElementById('phaseSlider').addEventListener('input', (e) => {
-        document.getElementById('phaseValue').textContent = e.target.value;
+    // LPF
+    ui.lpf.checkbox.addEventListener('change', e => { updateLpfState(); sendCommand("MEMWRITE", "LOW_PASS_FILTER_ENABLE", e.target.checked ? 1 : 0); });
+    ui.lpf.freqSlider.addEventListener('input', e => ui.lpf.freqValue.textContent = e.target.value);
+    ui.lpf.freqSlider.addEventListener('change', e => { if (ui.lpf.checkbox.checked) sendCommand("MEMWRITE", "LOW_PASS_FILTER_FREQ", parseInt(e.target.value)); });
+    ui.lpf.slope.addEventListener('change', e => sendCommand("MEMWRITE", "LOW_PASS_FILTER_SLOPE", parseInt(e.target.value)));
+
+    // Room Gain
+    ui.roomGain.checkbox.addEventListener('change', e => { updateRoomGainState(); sendCommand("MEMWRITE", "ROOM_GAIN_ENABLE", e.target.checked ? 1 : 0); });
+    ui.roomGain.freqSlider.addEventListener('input', e => ui.roomGain.freqValue.textContent = e.target.value);
+    ui.roomGain.freqSlider.addEventListener('change', e => { const value = parseInt(e.target.value); const allowed = [25, 31, 40]; const snapped = allowed.reduce((p, c) => Math.abs(c - value) < Math.abs(p - value) ? c : p); e.target.value = snapped; ui.roomGain.freqValue.textContent = snapped; if (ui.roomGain.checkbox.checked) sendCommand("MEMWRITE", "ROOM_GAIN_FREQ", snapped); });
+    ui.roomGain.slope.addEventListener('change', e => sendCommand("MEMWRITE", "ROOM_GAIN_SLOPE", parseInt(e.target.value)));
+
+    // PEQ1,2,3
+    ['peq1', 'peq2', 'peq3'].forEach(peq => {
+        const group = ui[peq];
+        const paramBase = peq.toUpperCase();
+        group.checkbox.addEventListener('change', e => { const f = { peq1: updatePeq1State, peq2: updatePeq2State, peq3: updatePeq3State }[peq]; f(); sendCommand("MEMWRITE", paramBase + "_ENABLE", e.target.checked ? 1 : 0); });
+        [['freqSlider', 'FREQ'], ['boostSlider', 'BOOST'], ['qSlider', 'QFACTOR']].forEach(([slider, param]) => {
+            group[slider].addEventListener('input', e => { const val = slider === 'boostSlider' || slider === 'qSlider' ? parseFloat(e.target.value).toFixed(1) : e.target.value; group[slider.replace('Slider', 'Value')].textContent = val; });
+            group[slider].addEventListener('change', e => { if (group.checkbox.checked) sendCommand("MEMWRITE", paramBase + "_" + param, slider === 'boostSlider' || slider === 'qSlider' ? parseFloat(e.target.value) : parseInt(e.target.value)); });
+        });
     });
 
-    // LPF controls
-    document.getElementById('lpfCheckbox').addEventListener('change', (e) => {
-        updateLpfState();
-        sendCommand("MEMWRITE", "LOW_PASS_FILTER_ENABLE", e.target.checked ? 1 : 0);
-    });
-    document.getElementById('lpfFreqSlider').addEventListener('change', (e) => {
-        document.getElementById('lpfFreqValue').textContent = e.target.value;
-        if (document.getElementById('lpfCheckbox').checked) {
-            sendCommand("MEMWRITE", "LOW_PASS_FILTER_FREQ", parseInt(e.target.value));
-        }
-    });
-    document.getElementById('lpfFreqSlider').addEventListener('input', (e) => {
-        document.getElementById('lpfFreqValue').textContent = e.target.value;
-    });
-    document.getElementById('lpfSlope').addEventListener('change', (e) => {
-        sendCommand("MEMWRITE", "LOW_PASS_FILTER_SLOPE", parseInt(e.target.value));
-    });
-
-    // Room Gain controls
-    document.getElementById('roomGainCheckbox').addEventListener('change', (e) => {
-        updateRoomGainState();
-        sendCommand("MEMWRITE", "ROOM_GAIN_ENABLE", e.target.checked ? 1 : 0);
-    });
-    document.getElementById('roomGainFreqSlider').addEventListener('change', (e) => {
-        const value = parseInt(e.target.value);
-        // Snap to discrete values
-        const allowed = [25, 31, 40];
-        const snapped = allowed.reduce((prev, curr) =>
-            Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-        );
-        e.target.value = snapped;
-        document.getElementById('roomGainFreqValue').textContent = snapped;
-        if (document.getElementById('roomGainCheckbox').checked) {
-            sendCommand("MEMWRITE", "ROOM_GAIN_FREQ", snapped);
-        }
-    });
-    document.getElementById('roomGainFreqSlider').addEventListener('input', (e) => {
-        document.getElementById('roomGainFreqValue').textContent = e.target.value;
-    });
-    document.getElementById('roomGainSlope').addEventListener('change', (e) => {
-        sendCommand("MEMWRITE", "ROOM_GAIN_SLOPE", parseInt(e.target.value));
-    });
-
-    // PEQ1 controls
-    document.getElementById('peq1Checkbox').addEventListener('change', (e) => {
-        updatePeq1State();
-        sendCommand("MEMWRITE", "PEQ1_ENABLE", e.target.checked ? 1 : 0);
-    });
-    document.getElementById('peq1FreqSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq1Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ1_FREQ", parseInt(e.target.value));
-        }
-    });
-    document.getElementById('peq1FreqSlider').addEventListener('input', (e) => {
-        document.getElementById('peq1FreqValue').textContent = e.target.value;
-    });
-    document.getElementById('peq1BoostSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq1Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ1_BOOST", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq1BoostSlider').addEventListener('input', (e) => {
-        document.getElementById('peq1BoostValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-    document.getElementById('peq1QSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq1Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ1_QFACTOR", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq1QSlider').addEventListener('input', (e) => {
-        document.getElementById('peq1QValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-
-    // PEQ2 controls (similar to PEQ1)
-    document.getElementById('peq2Checkbox').addEventListener('change', (e) => {
-        updatePeq2State();
-        sendCommand("MEMWRITE", "PEQ2_ENABLE", e.target.checked ? 1 : 0);
-    });
-    document.getElementById('peq2FreqSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq2Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ2_FREQ", parseInt(e.target.value));
-        }
-    });
-    document.getElementById('peq2FreqSlider').addEventListener('input', (e) => {
-        document.getElementById('peq2FreqValue').textContent = e.target.value;
-    });
-    document.getElementById('peq2BoostSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq2Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ2_BOOST", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq2BoostSlider').addEventListener('input', (e) => {
-        document.getElementById('peq2BoostValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-    document.getElementById('peq2QSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq2Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ2_QFACTOR", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq2QSlider').addEventListener('input', (e) => {
-        document.getElementById('peq2QValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-
-    // PEQ3 controls (similar to PEQ1)
-    document.getElementById('peq3Checkbox').addEventListener('change', (e) => {
-        updatePeq3State();
-        sendCommand("MEMWRITE", "PEQ3_ENABLE", e.target.checked ? 1 : 0);
-    });
-    document.getElementById('peq3FreqSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq3Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ3_FREQ", parseInt(e.target.value));
-        }
-    });
-    document.getElementById('peq3FreqSlider').addEventListener('input', (e) => {
-        document.getElementById('peq3FreqValue').textContent = e.target.value;
-    });
-    document.getElementById('peq3BoostSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq3Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ3_BOOST", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq3BoostSlider').addEventListener('input', (e) => {
-        document.getElementById('peq3BoostValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-    document.getElementById('peq3QSlider').addEventListener('change', (e) => {
-        if (document.getElementById('peq3Checkbox').checked) {
-            sendCommand("MEMWRITE", "PEQ3_QFACTOR", parseFloat(e.target.value));
-        }
-    });
-    document.getElementById('peq3QSlider').addEventListener('input', (e) => {
-        document.getElementById('peq3QValue').textContent = parseFloat(e.target.value).toFixed(1);
-    });
-
-    // Standby select
-    document.getElementById('standbySelect').addEventListener('change', (e) => {
-        sendCommand("MEMWRITE", "STANDBY", parseInt(e.target.value));
-    });
-
-    // Polarity checkbox
-    document.getElementById('polarityCheckbox').addEventListener('change', (e) => {
-        updatePolarityLabel();
-        sendCommand("MEMWRITE", "POLARITY", e.target.checked ? 1 : 0);
-    });
-
-    // Port tuning select
-    document.getElementById('portTuningSelect').addEventListener('change', (e) => {
-        sendCommand("MEMWRITE", "PORTTUNING", parseInt(e.target.value));
-    });
+    // Standby, Polarity, PortTuning
+    ui.standby.select.addEventListener('change', e => sendCommand("MEMWRITE", "STANDBY", parseInt(e.target.value)));
+    ui.polarity.checkbox.addEventListener('change', e => { updatePolarityLabel(); sendCommand("MEMWRITE", "POLARITY", e.target.checked ? 1 : 0); });
+    ui.portTuning.select.addEventListener('change', e => sendCommand("MEMWRITE", "PORTTUNING", parseInt(e.target.value)));
 
     // Initialize UI states
-    updateLpfState();
-    updateRoomGainState();
-    updatePeq1State();
-    updatePeq2State();
-    updatePeq3State();
-    updatePolarityLabel();
+    updateLpfState(); updateRoomGainState(); updatePeq1State(); updatePeq2State(); updatePeq3State(); updatePolarityLabel();
 });

@@ -1,243 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVSControl</title>
-    <link rel="icon" type="image/png"
-        href="//www.svsound.com/cdn/shop/files/svsfavicon.jpg?crop=center&height=32&v=1676574291&width=32">
-    <link rel="stylesheet" href="./svs.css" />
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#111">
+    <head>
+        <meta charset="UTF-8">
+        <title>SVSControl</title>
+        <link rel="stylesheet" href="./svs.css" />
+        <link rel="manifest" href="./manifest.json">
+        <link rel="apple-touch-icon" href="./svs-192.png">
+        <link rel="icon" type="image/png" sizes="192x192" href="./svs-192.png">
+        <link rel="icon" type="image/png" sizes="512x512" href="./svs-512.png">
+        <meta name="theme-color" content="#111">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
 
-    <!-- Needed for iOS -->
-    <link rel="apple-touch-icon" href="svs-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-</head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <button class="connect-btn" id="connectBtn">Pair</button>
+            </div>
 
-<body>
-    <div class="container">
-        <div class="header">
-            <button class="connect-btn" id="connectBtn">Pair</button>
+
+            <div id="app" class="">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(0)">General</button>
+                    <button class="tab" onclick="switchTab(1)">PEQ</button>
+                    <button class="tab" onclick="switchTab(2)">More</button>
+                </div>
+
+                <div class="tab-content active" id="tab0">
+                    <div class="control-group">
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Volume (dB)</span>
+                                <span id="volumeValue">-30</span>
+                            </div>
+                            <input type="range" id="volumeSlider" min="-60" max="0" step="1" value="-30">
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Phase (°)</span>
+                                <span id="phaseValue">0</span>
+                            </div>
+                            <input type="range" id="phaseSlider" min="0" max="180" step="1" value="0">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="lpfCheckbox">
+                            <label for="lpfCheckbox" id="lpfLabel">Low Pass Filter OFF (LFE Active)</label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Low Pass Filter Freq. (Hz)</span>
+                                <span id="lpfFreqValue">30</span>
+                            </div>
+                            <input type="range" id="lpfFreqSlider" min="30" max="200" step="1" value="30" disabled>
+                        </div>
+
+                        <div class="inline-controls">
+                            <label>Slope:</label>
+                            <select id="lpfSlope" disabled>
+                                <option value="6">6 dB</option>
+                                <option value="12">12 dB</option>
+                                <option value="18">18 dB</option>
+                                <option value="24">24 dB</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="roomGainCheckbox" checked>
+                            <label for="roomGainCheckbox" id="roomGainLabel">Room Gain Compensation ON</label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Room Gain Freq. (Hz)</span>
+                                <span id="roomGainFreqValue">25</span>
+                            </div>
+                            <input type="range" id="roomGainFreqSlider" min="25" max="40" step="1" value="25">
+                        </div>
+
+                        <div class="inline-controls">
+                            <label>Slope:</label>
+                            <select id="roomGainSlope">
+                                <option value="6">6 dB</option>
+                                <option value="12">12 dB</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab1">
+                    <div class="peq-section">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="peq1Checkbox">
+                            <label for="peq1Checkbox" id="peq1Label">PEQ1 Disabled</label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Freq (Hz)</span>
+                                <span id="peq1FreqValue">20</span>
+                            </div>
+                            <input type="range" id="peq1FreqSlider" min="20" max="200" step="1" value="20" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Boost (dB)</span>
+                                <span id="peq1BoostValue">0.0</span>
+                            </div>
+                            <input type="range" id="peq1BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Q-Factor</span>
+                                <span id="peq1QValue">0.2</span>
+                            </div>
+                            <input type="range" id="peq1QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
+                        </div>
+                    </div>
+
+                    <div class="peq-section">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="peq2Checkbox">
+                            <label for="peq2Checkbox" id="peq2Label">PEQ2 Disabled</label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Freq (Hz)</span>
+                                <span id="peq2FreqValue">20</span>
+                            </div>
+                            <input type="range" id="peq2FreqSlider" min="20" max="200" step="1" value="20" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Boost (dB)</span>
+                                <span id="peq2BoostValue">0.0</span>
+                            </div>
+                            <input type="range" id="peq2BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Q-Factor</span>
+                                <span id="peq2QValue">0.2</span>
+                            </div>
+                            <input type="range" id="peq2QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
+                        </div>
+                    </div>
+
+                    <div class="peq-section">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="peq3Checkbox">
+                            <label for="peq3Checkbox" id="peq3Label">PEQ3 Disabled</label>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Freq (Hz)</span>
+                                <span id="peq3FreqValue">20</span>
+                            </div>
+                            <input type="range" id="peq3FreqSlider" min="20" max="200" step="1" value="20" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Boost (dB)</span>
+                                <span id="peq3BoostValue">0.0</span>
+                            </div>
+                            <input type="range" id="peq3BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
+                        </div>
+
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Q-Factor</span>
+                                <span id="peq3QValue">0.2</span>
+                            </div>
+                            <input type="range" id="peq3QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab2">
+                    <div class="control-group">
+                        <label>Presets</label>
+                        <div class="preset-controls">
+                            <select id="presetSelect">
+                                <option value="0">MOVIE</option>
+                                <option value="1">MUSIC</option>
+                                <option value="2">CUSTOM</option>
+                                <option value="3" selected>DEFAULT</option>
+                            </select>
+                            <button class="mr-5" onclick="loadPreset()">Load</button>
+                            <button class="mr-5" onclick="savePreset()">Save</button>
+                            <button class="mr-5" onclick="renamePreset()">Rename</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Standby Mode</label>
+                        <select id="standbySelect">
+                            <option value="0">AUTO ON</option>
+                            <option value="1" selected>TRIGGER</option>
+                            <option value="2">ON</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="polarityCheckbox" checked>
+                            <label for="polarityCheckbox" id="polarityLabel">Polarity (-)</label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Port Tuning</label>
+                        <select id="portTuningSelect">
+                            <option value="20">20 Hz</option>
+                            <option value="30">30 Hz</option>
+                        </select>
+                    </div>
+                    <div class="console fill-space" id="console"></div>
+                </div>
+            </div>
         </div>
-        
 
-        <div id="app" class="hidden">
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab(0)">General</button>
-                <button class="tab" onclick="switchTab(1)">PEQ</button>
-                <button class="tab" onclick="switchTab(2)">More</button>
-            </div>
-
-            <div class="tab-content active" id="tab0">
-                <div class="control-group">
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Volume (dB)</span>
-                            <span id="volumeValue">-30</span>
-                        </div>
-                        <input type="range" id="volumeSlider" min="-60" max="0" step="1" value="-30">
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Phase (°)</span>
-                            <span id="phaseValue">0</span>
-                        </div>
-                        <input type="range" id="phaseSlider" min="0" max="180" step="1" value="0">
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="lpfCheckbox">
-                        <label for="lpfCheckbox" id="lpfLabel">Low Pass Filter OFF (LFE Active)</label>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Low Pass Filter Freq. (Hz)</span>
-                            <span id="lpfFreqValue">30</span>
-                        </div>
-                        <input type="range" id="lpfFreqSlider" min="30" max="200" step="1" value="30" disabled>
-                    </div>
-
-                    <div class="inline-controls">
-                        <label>Slope:</label>
-                        <select id="lpfSlope" disabled>
-                            <option value="6">6 dB</option>
-                            <option value="12">12 dB</option>
-                            <option value="18">18 dB</option>
-                            <option value="24">24 dB</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="roomGainCheckbox" checked>
-                        <label for="roomGainCheckbox" id="roomGainLabel">Room Gain Compensation ON</label>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Room Gain Freq. (Hz)</span>
-                            <span id="roomGainFreqValue">25</span>
-                        </div>
-                        <input type="range" id="roomGainFreqSlider" min="25" max="40" step="1" value="25">
-                    </div>
-
-                    <div class="inline-controls">
-                        <label>Slope:</label>
-                        <select id="roomGainSlope">
-                            <option value="6">6 dB</option>
-                            <option value="12">12 dB</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="tab1">
-                <div class="peq-section">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="peq1Checkbox">
-                        <label for="peq1Checkbox" id="peq1Label">PEQ1 Disabled</label>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Freq (Hz)</span>
-                            <span id="peq1FreqValue">20</span>
-                        </div>
-                        <input type="range" id="peq1FreqSlider" min="20" max="200" step="1" value="20" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Boost (dB)</span>
-                            <span id="peq1BoostValue">0.0</span>
-                        </div>
-                        <input type="range" id="peq1BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Q-Factor</span>
-                            <span id="peq1QValue">0.2</span>
-                        </div>
-                        <input type="range" id="peq1QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
-                    </div>
-                </div>
-
-                <div class="peq-section">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="peq2Checkbox">
-                        <label for="peq2Checkbox" id="peq2Label">PEQ2 Disabled</label>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Freq (Hz)</span>
-                            <span id="peq2FreqValue">20</span>
-                        </div>
-                        <input type="range" id="peq2FreqSlider" min="20" max="200" step="1" value="20" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Boost (dB)</span>
-                            <span id="peq2BoostValue">0.0</span>
-                        </div>
-                        <input type="range" id="peq2BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Q-Factor</span>
-                            <span id="peq2QValue">0.2</span>
-                        </div>
-                        <input type="range" id="peq2QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
-                    </div>
-                </div>
-
-                <div class="peq-section">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="peq3Checkbox">
-                        <label for="peq3Checkbox" id="peq3Label">PEQ3 Disabled</label>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Freq (Hz)</span>
-                            <span id="peq3FreqValue">20</span>
-                        </div>
-                        <input type="range" id="peq3FreqSlider" min="20" max="200" step="1" value="20" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Boost (dB)</span>
-                            <span id="peq3BoostValue">0.0</span>
-                        </div>
-                        <input type="range" id="peq3BoostSlider" min="-12" max="6" step="0.1" value="0" disabled>
-                    </div>
-
-                    <div class="slider-container">
-                        <div class="slider-label">
-                            <span>Q-Factor</span>
-                            <span id="peq3QValue">0.2</span>
-                        </div>
-                        <input type="range" id="peq3QSlider" min="0.2" max="10" step="0.1" value="0.2" disabled>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="tab2">
-                <div class="control-group">
-                    <label>Presets</label>
-                    <div class="preset-controls">
-                        <select id="presetSelect">
-                            <option value="0">MOVIE</option>
-                            <option value="1">MUSIC</option>
-                            <option value="2">CUSTOM</option>
-                            <option value="3" selected>DEFAULT</option>
-                        </select>
-                        <button class="mr-5" onclick="loadPreset()">Load</button>
-                        <button class="mr-5" onclick="savePreset()">Save</button>
-                        <button class="mr-5" onclick="renamePreset()">Rename</button>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label>Standby Mode</label>
-                    <select id="standbySelect">
-                        <option value="0">AUTO ON</option>
-                        <option value="1" selected>TRIGGER</option>
-                        <option value="2">ON</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="polarityCheckbox" checked>
-                        <label for="polarityCheckbox" id="polarityLabel">Polarity (-)</label>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label>Port Tuning</label>
-                    <select id="portTuningSelect">
-                        <option value="20">20 Hz</option>
-                        <option value="30">30 Hz</option>
-                    </select>
-                </div>
-                <div class="console fill-space" id="console"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="./svs.js"></script>
-</body>
+        <script src="./svs.js"></script>
+    </body>
 
 </html>
